@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+	<description>YeeXing applicationContext</description>
+	<bean id="applicationContext"
+		class="org.apache.axis2.extensions.spring.receivers.ApplicationContextHolder" />
+	<bean id="transactionProxy" lazy-init="true" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+		<property name="transactionManager">
+			<ref bean="transactionManager" />
+		</property>
+		<property name="transactionAttributes">
+			<props>
+				<prop key="do*">PROPAGATION_REQUIRED,-ServiceException</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource">
+			<ref local="dataSource" />
+		</property>
+	</bean>
+	<bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiName">
+			<value>java:comp/env/jdbc/mysql</value>
+		</property>
+	</bean>
+	<bean id="yeeXingDAO"
+		class="com.neusoft.services.travelSky.yeeXing.dao.YeeXingDAOImpl">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<bean id="yeeXingBO" parent="transactionProxy">
+		<property name="target">
+			<bean class="com.neusoft.services.travelSky.yeeXing.bo.YeeXingBOImpl">
+				<property name="dao">
+					<ref bean="yeeXingDAO" />
+				</property>
+			</bean>
+		</property>
+	</bean>
+	<bean id="yeeXingService" class="com.neusoft.services.travelSky.yeeXing.service.YeeXingServiceImpl">
+		<property name="bo" ref="yeeXingBO" />
+	</bean>
+</beans>

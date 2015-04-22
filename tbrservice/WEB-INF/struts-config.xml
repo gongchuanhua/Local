@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts-config PUBLIC "-//Apache Software Foundation//DTD Struts Configuration 1.2//EN" "http://struts.apache.org/dtds/struts-config_1_2.dtd">
+<struts-config>
+  <action-mappings >
+		<action path="/servicesControl"
+			type="com.neusoft.uip.servicecontrol.action.ServiceControlAction"
+			scope="request" parameter="method">
+		</action>
+		<action path="/servicesModule"
+			type="com.neusoft.uip.servicemodule.action.ServiceModuleAction"
+			scope="request" parameter="method">
+		</action>
+		<action path="/servicesFault"
+			type="com.neusoft.uip.faultyservices.action.ServiceFaultAction"
+			scope="request" parameter="method">
+		</action>
+		<action path="/servicesSecurity"
+			type="com.neusoft.uip.servicesecurityset.action.ServiceSecurityAction"
+			scope="request" parameter="method">
+		</action>
+		<action path="/servicesMessage"
+			type="com.neusoft.uip.sermessagemonitor.action.SerMessageAction"
+			scope="request" parameter="method">
+		</action>
+  </action-mappings>
+  <message-resources parameter="ApplicationResources" />
+  	<plug-in className="com.neusoft.uip.servicemodule.plugin.ServiceModulePlugin" />
+</struts-config>

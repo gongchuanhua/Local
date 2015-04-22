@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans-2.0.dtd">
+<beans>
+	<description>Demo applicationContext</description>
+	<bean id="applicationContext"
+		class="org.apache.axis2.extensions.spring.receivers.ApplicationContextHolder" />
+	<bean id="demoTransactionProxy" lazy-init="true" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+		<property name="transactionManager">
+			<ref bean="demoTransactionManager"/>
+		</property>
+		<property name="transactionAttributes">
+			<props>
+				<prop key="do*">PROPAGATION_REQUIRED,-ServiceException</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="demoTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource">
+			<ref local="demo_dataSource"/>
+		</property>
+	</bean>
+	<bean id="demo_dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiName">
+			<value>java:comp/env/jdbc/mysql</value>
+		</property>
+	</bean>
+	<bean id="demoDAO" class="com.neusoft.services.demo.dao.DemoDAOImpl">
+		<property name="dataSource" ref="demo_dataSource" />
+	</bean>
+	<bean id="demoBO" parent="demoTransactionProxy">
+		<property name="target">
+			<bean class="com.neusoft.services.demo.bo.DemoBOImpl">
+				<property name="demoDAO">
+					<ref bean="demoDAO" />
+				</property>
+			</bean>
+		</property>
+	</bean>
+	<bean id="demoService" class="com.neusoft.services.demo.service.DemoServiceImpl">
+		<property name="demoBO" ref="demoBO" />
+	</bean>
+</beans>

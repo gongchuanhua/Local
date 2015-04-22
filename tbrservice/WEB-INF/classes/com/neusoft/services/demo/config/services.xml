@@ -1,0 +1,14 @@
+<serviceGroup name="demo">
+  <service name="DemoService" class="com.neusoft.services.demo.service.DemoServiceInit">
+    <description>
+         simple spring example - inside the AAR
+    </description>
+    <parameter name="ServiceTCCL">composite</parameter>
+    <parameter name="ServiceObjectSupplier">org.apache.axis2.extensions.spring.receivers.SpringAppContextAwareObjectSupplier</parameter>
+    <parameter name="SpringBeanName">demoService</parameter>
+    <messageReceivers>   
+        <messageReceiver mep="http://www.w3.org/2004/08/wsdl/in-only" class="org.apache.axis2.rpc.receivers.RPCInOnlyMessageReceiver"/>   
+        <messageReceiver mep="http://www.w3.org/2004/08/wsdl/in-out"  class="org.apache.axis2.rpc.receivers.RPCMessageReceiver"/>   
+    </messageReceivers>   
+  </service>
+</serviceGroup>

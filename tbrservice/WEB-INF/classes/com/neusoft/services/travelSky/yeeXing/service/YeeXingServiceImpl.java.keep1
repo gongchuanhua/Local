@@ -1,0 +1,1088 @@
+/**
+ *
+ **************************************************************
+ * 项目名 : UIP4TravelSky
+ * 文件名 : YeeXingServiceImpl.java
+ * 建立日期	: 2013-5-13
+ * 作者		: liuxzh@neusoft.com
+ * 模块		:
+ * 描述		:
+ * 备注		:
+ * ------------------------------------------------------------
+ * 修改历史
+ * 序号		日期		修改人			修改原因
+ *
+ **************************************************************
+ */
+package com.neusoft.services.travelSky.yeeXing.service;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import org.apache.axis2.databinding.ADBBean;
+
+import com.neusoft.services.tools.sendURL.SendURLPostBO;
+import com.neusoft.services.travelSky.yeeXing.bo.YeeXingBO;
+import com.neusoft.services.travelSky.yeeXing.format.BookTicketInput;
+import com.neusoft.services.travelSky.yeeXing.format.BookTicketOutput;
+import com.neusoft.services.travelSky.yeeXing.format.BookTicketPassengerXML;
+import com.neusoft.services.travelSky.yeeXing.format.BookTicketYeeXing;
+import com.neusoft.services.travelSky.yeeXing.format.BookTicketYeeXingResult;
+import com.neusoft.services.travelSky.yeeXing.format.BookTicketYeeXingResultOrderInfo;
+import com.neusoft.services.travelSky.yeeXing.format.BookTicketYeeXingResultPassengerinfo;
+import com.neusoft.services.travelSky.yeeXing.format.Cabin;
+import com.neusoft.services.travelSky.yeeXing.format.Contacter;
+import com.neusoft.services.travelSky.yeeXing.format.Encryption;
+import com.neusoft.services.travelSky.yeeXing.format.Flight;
+import com.neusoft.services.travelSky.yeeXing.format.FlightInfo;
+import com.neusoft.services.travelSky.yeeXing.format.OrderInfo;
+import com.neusoft.services.travelSky.yeeXing.format.OutNotifyInput;
+import com.neusoft.services.travelSky.yeeXing.format.Passenger;
+import com.neusoft.services.travelSky.yeeXing.format.PassengerInfo;
+import com.neusoft.services.travelSky.yeeXing.format.PayDrawbackResponse;
+import com.neusoft.services.travelSky.yeeXing.format.PayNotifyInput;
+import com.neusoft.services.travelSky.yeeXing.format.PayOutInput;
+import com.neusoft.services.travelSky.yeeXing.format.PayOutYeeXingInput;
+import com.neusoft.services.travelSky.yeeXing.format.PayOutYeeXingResult;
+import com.neusoft.services.travelSky.yeeXing.format.Price;
+import com.neusoft.services.travelSky.yeeXing.format.PriceLis;
+import com.neusoft.services.travelSky.yeeXing.format.PriceList;
+import com.neusoft.services.travelSky.yeeXing.format.Priceinfo;
+import com.neusoft.services.travelSky.yeeXing.format.QueryAirpolicyInput;
+import com.neusoft.services.travelSky.yeeXing.format.QueryAirpolicyYeeXingRuslt;
+import com.neusoft.services.travelSky.yeeXing.format.QueryFlightInput;
+import com.neusoft.services.travelSky.yeeXing.format.QueryFlightYeeXingResult;
+import com.neusoft.services.travelSky.yeeXing.format.RefunNotifyInput;
+import com.neusoft.services.travelSky.yeeXing.format.RefundTicketInput;
+import com.neusoft.services.travelSky.yeeXing.format.RefundTicketYeeXingResult;
+import com.thoughtworks.xstream.XStream;
+
+/**
+ *
+ **************************************************************
+ * 项目名 : UIP4TravelSky
+ * 文件名 : YeeXingServiceImpl.java
+ * 建立日期	: 2013-5-13
+ * 作者		: liuxzh@neusoft.com
+ * 模块		:
+ * 描述		:
+ * 备注		:
+ * ------------------------------------------------------------
+ * 修改历史
+ * 序号		日期		修改人			修改原因
+ *
+ **************************************************************
+ */
+
+public class YeeXingServiceImpl implements YeeXingService {
+	//210.14.71.250
+	private static final String USERNAME = "drtest";//"drdlfgs";
+	private static final String OUT_NOTIFY_URL = "http://218.24.170.156:9282/CXF4YeeXing/YeeXingOutNotifyServl";
+	private static final String PAY_NOTIFY_URL = "http://218.24.170.156:9282/CXF4YeeXing/YeeXingPayNotifyServl";
+	private static final String REFUND_NOTIFY_URL = "http://www.116114777.com/airticket/airticketbookctrl/refundNotify";
+	private static final String REFUND_URL = "http://www.116114777.com/uip/services/UPSDrawback/doDrawback";
+
+	// 初始化各XML-JAVA转换器
+	private static XStream payDrawbackResponseXStream = new XStream();
+	private static XStream refunNotifyInputXStream = new XStream();
+	private static XStream refundTicketYeeXingResultXStream = new XStream();
+	private static XStream refundTicketInputXStream = new XStream();
+	private static XStream queryFlightInputXStream = new XStream();
+	private static XStream queryFlightYeeXingResultXStream = new XStream();
+	private static XStream queryFlightOutputXStream = new XStream();
+	private static XStream bookTicketInputXStream = new XStream();
+	private static XStream queryAirpolicyYeeXingInputXStream = new XStream();
+	private static XStream queryAirpolicyYeeXingRusltXStream = new XStream();
+	private static XStream queryAirpolicyYeeXingRusltXStreamB = new XStream();
+	private static XStream bookTicketPassengerXMLXStream = new XStream();
+	private static XStream bookTicketYeeXingResultXStream = new XStream();
+	private static XStream bookTicketOutputXStream = new XStream();
+	private static XStream payOutInputXStream = new XStream();
+	private static XStream payOutYeeXingResultXStream = new XStream();
+	private static XStream payNotifyInputXStream = new XStream();
+	private static XStream outNotifyInputXStream = new XStream();
+
+	public YeeXingServiceImpl() {
+		super();
+		payDrawbackResponseXStream.alias("payDrawbackResponse", PayDrawbackResponse.class);
+
+		refunNotifyInputXStream.alias("input", RefunNotifyInput.class);
+
+		refundTicketYeeXingResultXStream.alias("result", RefundTicketYeeXingResult.class);
+
+		refundTicketInputXStream.alias("input", RefundTicketInput.class);
+
+		outNotifyInputXStream.alias("input", OutNotifyInput.class);
+
+		payNotifyInputXStream.alias("input", PayNotifyInput.class);
+
+		payOutYeeXingResultXStream.alias("result", PayOutYeeXingResult.class);
+
+		payOutInputXStream.alias("paySchedulingRequest", PayOutInput.class);
+
+		queryAirpolicyYeeXingInputXStream.alias("input", QueryAirpolicyInput.class);
+
+		bookTicketOutputXStream.alias("result", BookTicketOutput.class);
+
+		bookTicketYeeXingResultXStream.alias("result", BookTicketYeeXingResult.class);
+		bookTicketYeeXingResultXStream.alias("orderInfo ", BookTicketYeeXingResultOrderInfo.class);
+		bookTicketYeeXingResultXStream.alias("passengerinfo", BookTicketYeeXingResultPassengerinfo.class);
+		bookTicketYeeXingResultXStream.alias("price", Price.class);
+		bookTicketYeeXingResultXStream.useAttributeFor(BookTicketYeeXingResultOrderInfo.class, "orderid");
+		bookTicketYeeXingResultXStream.useAttributeFor(BookTicketYeeXingResultOrderInfo.class, "ordered");
+		bookTicketYeeXingResultXStream.useAttributeFor(BookTicketYeeXingResultOrderInfo.class, "out_orderid");
+		bookTicketYeeXingResultXStream.useAttributeFor(BookTicketYeeXingResultOrderInfo.class, "createTime");
+		bookTicketYeeXingResultXStream.useAttributeFor(BookTicketYeeXingResultPassengerinfo.class, "passengerName");
+		bookTicketYeeXingResultXStream.useAttributeFor(BookTicketYeeXingResultPassengerinfo.class, "passengerType");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "infPrice");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "tickType");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "changePnr");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "payType");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "ibePrice");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "buildFee");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "oilFee");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "plcid");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "isSphigh");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "disc");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "extReward");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "tickPrice");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "profits");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "restWorkTime");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "workTime");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "outTime");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "memo");
+		bookTicketYeeXingResultXStream.useAttributeFor(Price.class, "totalPrice");
+
+		bookTicketPassengerXMLXStream.alias("input", BookTicketPassengerXML.class);
+		bookTicketPassengerXMLXStream.alias("passenger ", Passenger.class);
+		bookTicketPassengerXMLXStream.alias("contacter", Contacter.class);
+		bookTicketPassengerXMLXStream.useAttributeFor(Passenger.class, "Name");
+		bookTicketPassengerXMLXStream.useAttributeFor(Passenger.class, "Type");
+		bookTicketPassengerXMLXStream.useAttributeFor(Passenger.class, "IdType");
+		bookTicketPassengerXMLXStream.useAttributeFor(Passenger.class, "IdNo");
+		bookTicketPassengerXMLXStream.useAttributeFor(Contacter.class, "Name");
+		bookTicketPassengerXMLXStream.useAttributeFor(Contacter.class, "Telephone");
+
+		// 指定类实例化的别名，别名要和对应的复合元素名称一致.复合元素最终对应
+		// 的是JAVA类的一个实例
+		queryAirpolicyYeeXingRusltXStreamB.alias("result", QueryAirpolicyYeeXingRuslt.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例BEGIN----//
+		queryAirpolicyYeeXingRusltXStreamB.alias("priceList", PriceList.class);
+		queryAirpolicyYeeXingRusltXStreamB.alias("priceLis", PriceLis.class);
+		queryAirpolicyYeeXingRusltXStreamB.alias("priceinfo", Priceinfo.class);
+
+		// 指定类实例化的别名，别名要和对应的复合元素名称一致.复合元素最终对应
+		// 的是JAVA类的一个实例
+		queryAirpolicyYeeXingRusltXStream.alias("result", QueryAirpolicyYeeXingRuslt.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例BEGIN----//
+		queryAirpolicyYeeXingRusltXStream.alias("priceList", PriceList.class);
+		queryAirpolicyYeeXingRusltXStream.alias("priceLis", PriceLis.class);
+		queryAirpolicyYeeXingRusltXStream.alias("priceinfo", Priceinfo.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例END------//
+		// 指定类成员变量为元素属性
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(PriceLis.class, "isOneCabinManyPrice");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(PriceLis.class, "isHighestPrice");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(PriceLis.class, "buildFee");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(PriceLis.class, "oilFee");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "workReturnTime");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "restReturnTime");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "refund");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "invalid");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "credit");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "indemnity");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "commPayPrice");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "encryptString");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "ibePrice");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "tickType");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "changePnr");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "ibePricec");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "plcid");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "isSphigh");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "disc");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "extReward");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "tickPrice");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "profits");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "workTime");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "outTime");
+		queryAirpolicyYeeXingRusltXStream.useAttributeFor(Priceinfo.class, "memo");
+
+		// 指定类实例化的别名，别名要和对应的复合元素名称一致.复合元素最终对应
+		// 的是JAVA类的一个实例
+		bookTicketInputXStream.alias("input", BookTicketInput.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例BEGIN----//
+		bookTicketInputXStream.alias("passengerInfo", PassengerInfo.class);
+		bookTicketInputXStream.alias("orderInfo", OrderInfo.class);
+		bookTicketInputXStream.alias("flightInfo", FlightInfo.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例END------//
+
+
+		// 指定类实例化的别名，别名要和对应的复合元素名称一致.复合元素最终对应
+		// 的是JAVA类的一个实例
+		queryFlightInputXStream.alias("QueryFlightInput", QueryFlightInput.class);
+
+		// 指定类实例化的别名，别名要和对应的复合元素名称一致.复合元素最终对应
+		// 的是JAVA类的一个实例
+		queryFlightOutputXStream.alias("result", QueryFlightYeeXingResult.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例BEGIN----//
+		queryFlightOutputXStream.alias("flight", Flight.class);
+		queryFlightOutputXStream.alias("cabin", Cabin.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例END------//
+
+		// 指定类实例化的别名，别名要和对应的复合元素名称一致.复合元素最终对应
+		// 的是JAVA类的一个实例
+		queryFlightYeeXingResultXStream.alias("result", QueryFlightYeeXingResult.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例BEGIN----//
+		queryFlightYeeXingResultXStream.alias("flight", Flight.class);
+		queryFlightYeeXingResultXStream.alias("cabin", Cabin.class);
+		//----指定类实例化的别名，别名要和对应的复合元素名称一致,复合元素最终对应的是JAVA类的一个实例END------//
+		// 指定类成员变量为元素属性
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "orgCity");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "departTerm");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "dstCity");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "arrivalTerm");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "airComp");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "flightno");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "planeType");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "startTime");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "endTime");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "stopNumber");
+		queryFlightYeeXingResultXStream.useAttributeFor(Flight.class, "mealCode");
+		queryFlightYeeXingResultXStream.useAttributeFor(Cabin.class, "cabinCode");
+		queryFlightYeeXingResultXStream.useAttributeFor(Cabin.class, "cabinType");
+		queryFlightYeeXingResultXStream.useAttributeFor(Cabin.class, "cabinDiscount");
+		queryFlightYeeXingResultXStream.useAttributeFor(Cabin.class, "cabinName");
+		queryFlightYeeXingResultXStream.useAttributeFor(Cabin.class, "cabinSales");
+		queryFlightYeeXingResultXStream.useAttributeFor(Cabin.class, "ibePrice");
+		queryFlightYeeXingResultXStream.useAttributeFor(Cabin.class, "encryptString");
+
+	}
+
+	private YeeXingBO bo = null;
+
+	// 依赖注入方法
+	public void setBo(YeeXingBO yeeXingBO) {
+		this.bo = yeeXingBO;
+	}
+
+	SendURLPostBO senderBo = null;
+
+	public String queryFlight(String strXml) {
+		// XML TO JAVA对象转换
+		QueryFlightInput inputVO = (QueryFlightInput)queryFlightInputXStream.fromXML(strXml);
+		inputVO.setUserName(USERNAME);
+
+		// 生成签名
+		Encryption encryption = new Encryption();
+		String sign = encryption.getSign(inputVO);
+
+		//		IBEServiceStub stub;
+		//		IBEServiceStub.QueryFlight param;
+		//		IBEServiceStub.QueryFlightE echo;
+		String returnString = "";
+		String queryString = "";
+		QueryFlightYeeXingResult queryFlightYeeXingResult = new QueryFlightYeeXingResult();
+		try {
+			//			stub = new IBEServiceStub();
+			//			stub._getServiceClient().getOptions().setTimeOutInMilliSeconds(600000L);
+			//			stub._getServiceClient().getOptions().setProperty(Configuration.CHARACTER_SET_ENCODING, "GB2312");
+			//			param = (QueryFlight) getObject(QueryFlight.class);
+			//			param.setAirCompany(inputVO.getAirCompany());
+			//			param.setDstCity(inputVO.getDstCity());
+			//			param.setOrgCity(inputVO.getOrgCity());
+			//			param.setSign(sign);
+			//			param.setStartDate(inputVO.getStartDate());
+			//			param.setStartTime(inputVO.getStartDateTime());
+			//			param.setUserName(USERNAME);
+			//
+			//			echo = (QueryFlightE) getObject(QueryFlightE.class);
+			//			echo.setQueryFlight(param);
+			//
+			//			returnString = stub.QueryFlight(echo).getQueryFlightResponse().get_return().toString();
+			senderBo = SendURLPostBO.getInstance();
+			queryString += "airCompany=" + inputVO.getAirCompany();
+			queryString += "&dstCity=" + inputVO.getDstCity();
+			queryString += "&orgCity=" + inputVO.getOrgCity();
+			queryString += "&sign=" + sign;
+			queryString += "&startDate=" + inputVO.getStartDate();
+			queryString += "&startTime=" + inputVO.getStartDateTime();
+			queryString += "&userName=" + USERNAME;
+
+			returnString = senderBo.connectionUrl("CXF4YeeXing", "/YeeXingQueryFlightServl", queryString);
+			queryFlightYeeXingResult = (QueryFlightYeeXingResult)queryFlightYeeXingResultXStream.fromXML(returnString);
+		} catch(Exception e) {
+			e.printStackTrace();
+			queryFlightYeeXingResult.setIs_success("0");
+		}
+
+		//if (queryFlightYeeXingResult.getIs_success() == "T") {
+		returnString = queryFlightOutputXStream.toXML(queryFlightYeeXingResult).toString();
+		//}
+		int i = returnString.indexOf("<result>");
+		if (i > 0) {
+			returnString = returnString.substring(returnString.indexOf("<result>"));
+		}
+
+		// 发送SOAP
+		return returnString;
+	}
+
+	public String bookTicket(String strXml) {
+		String returnString = "";
+		// XML TO JAVA对象转换
+		BookTicketInput inputVO = (BookTicketInput)bookTicketInputXStream.fromXML(strXml);
+		inputVO.setUserName(USERNAME);
+
+		// 生成订单号及乘客编号
+		String order_no = getOrderNum();
+		OrderInfo orderInfo = inputVO.getOrderInfo();
+		orderInfo.setOrder_no(order_no);
+		FlightInfo flightInfo = inputVO.getFlightInfo();
+		flightInfo.setOrder_no(order_no);
+		List<PassengerInfo> passengerInfos = inputVO.getPassengerInfos();
+		int size = passengerInfos.size();
+		List<Passenger> passengers = new ArrayList<Passenger>();
+		for (int i = 0; i < size; i++) {
+			passengerInfos.get(i).setOrder_no(order_no);
+			passengerInfos.get(i).setPassenger_no(getPassengerNum());
+
+			Passenger passenger = new Passenger();
+			passenger.setIdNo(passengerInfos.get(i).getOrddetid_num());
+			passenger.setIdType(passengerInfos.get(i).getOrddet_type());
+			passenger.setName(passengerInfos.get(i).getPassenger_name());
+			passenger.setType(passengerInfos.get(i).getPassenger_type());
+			passengers.add(passenger);
+		}
+
+		// 获取政策
+		QueryAirpolicyInput queryAirpolicyInput = new QueryAirpolicyInput(USERNAME,inputVO.getEncryptString(),"","","3");
+		String queryAirpolicyRuslt = queryAirpolicy(queryAirpolicyInput, 0);
+		QueryAirpolicyYeeXingRuslt queryAirpolicyYeeXingRuslt = (QueryAirpolicyYeeXingRuslt)queryAirpolicyYeeXingRusltXStream.fromXML(queryAirpolicyRuslt);
+		String is_success = queryAirpolicyYeeXingRuslt.getIs_success();
+		if (!"T".equals(is_success)) {
+			returnString = "<result><is_success>F</is_success><error>获取政策失败，请稍后再试！</error></result>";
+			return returnString;
+		}
+		List<Priceinfo> priceinfos = queryAirpolicyYeeXingRuslt.getPriceList().getPriceLis().getPriceinfos();
+		if (priceinfos == null || priceinfos.isEmpty() || priceinfos.size() == 0) {
+			returnString = "<result><is_success>F</is_success><error>获取政策失败，请稍后再试！</error></result>";
+			return returnString;
+		}
+
+		// 生成订单
+		BookTicketPassengerXML bookTicketPassengerXML = new BookTicketPassengerXML();
+		Contacter contacter = new Contacter();
+		contacter.setName(orderInfo.getContacts_name());
+		if (orderInfo.getContacts_phone() != null && !"".equals(orderInfo.getContacts_phone())) {
+			contacter.setTelephone(orderInfo.getContacts_phone());
+		} else {
+			contacter.setTelephone(orderInfo.getContacts_tele());
+		}
+		bookTicketPassengerXML.setPassengers(passengers);
+		bookTicketPassengerXML.setContacter(contacter);
+		String passengerInfoString = "<?xml version=\"1.0\" encoding=\"GB2312\"?>\n"
+				+ bookTicketPassengerXMLXStream.toXML(bookTicketPassengerXML).toString();
+		passengerInfoString = passengerInfoString.replaceAll("\t", "");
+		passengerInfoString = passengerInfoString.replaceAll("\r", "");
+		passengerInfoString = passengerInfoString.replaceAll("\n", "");
+		passengerInfoString = passengerInfoString.replaceAll("\\s{2,}", "");
+		passengerInfoString = passengerInfoString.replaceAll("passengerName", "passenger Name");
+
+		BookTicketYeeXing bookTicketYeeXing = new BookTicketYeeXing();
+		bookTicketYeeXing.setPassengerInfo(passengerInfoString);
+		bookTicketYeeXing.setUserName(USERNAME);
+		bookTicketYeeXing.setEncryptString(priceinfos.get(0).getEncryptString());
+		bookTicketYeeXing.setOutOrderId("");
+		bookTicketYeeXing.setOrderId("");
+		// 生成签名
+		Encryption encryption = new Encryption();
+		String sign = encryption.getSign(bookTicketYeeXing);
+
+		//		IBEServiceStub stub;
+		//		IBEServiceStub.BookTicket bookTicket;
+		//		IBEServiceStub.BookTicketE bookTicketE;
+		String bookTicketYeeXingResultString;
+		BookTicketYeeXingResult bookTicketYeeXingResult;
+		String queryString = "";
+		try {
+			//			stub = new IBEServiceStub();
+			//			stub._getServiceClient().getOptions().setTimeOutInMilliSeconds(600000L);
+			//			stub._getServiceClient().getOptions().setProperty(Configuration.CHARACTER_SET_ENCODING, "GB2312");
+			//			bookTicket = (BookTicket) getObject(BookTicket.class);
+			//			bookTicket.setEncryptString(bookTicketYeeXing.getEncryptString());
+			//			bookTicket.setOrderid(bookTicketYeeXing.getOrderId());
+			//			bookTicket.setOutorderid(bookTicketYeeXing.getOutOrderId());
+			//			bookTicket.setPassengerInfo(bookTicketYeeXing.getPassengerInfo());
+			//			bookTicket.setSign(sign);
+			//			bookTicket.setUserName(USERNAME);
+			//
+			//			bookTicketE = (BookTicketE) getObject(BookTicketE.class);
+			//			bookTicketE.setBookTicket(bookTicket);
+			//			bookTicketYeeXingResultString = stub.BookTicket(bookTicketE).getBookTicketResponse()
+			//					.get_return().toString();
+
+			senderBo = SendURLPostBO.getInstance();
+			queryString += "encryptString=" + bookTicketYeeXing.getEncryptString();
+			queryString += "&passengerInfo=" + bookTicketYeeXing.getPassengerInfo();
+			queryString += "&orderid=";
+			queryString += "&outorderid=";
+			queryString += "&sign=" + sign;
+			queryString += "&userName=" + USERNAME;
+
+			bookTicketYeeXingResultString = senderBo.connectionUrl("CXF4YeeXing", "/YeeXingBookTicketServl", queryString);
+			bookTicketYeeXingResult = (BookTicketYeeXingResult)bookTicketYeeXingResultXStream.fromXML(bookTicketYeeXingResultString);
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<result><is_success>F</is_success><error>生成订单失败，请稍后再试！</error></result>";
+			return returnString;
+		}
+
+		if (!"T".equals(bookTicketYeeXingResult.getIs_success())) {
+			returnString = "<result><is_success>F</is_success><error>"
+					+ bookTicketYeeXingResult.getError()
+					+ "</error></result>";
+			return returnString;
+		}
+
+		// 入库数据补充
+		// TODO:1,总价考虑正常成人价格外其他价格.2,入库失败后的取消订单处理
+		String ibePrice = priceinfos.get(0).getIbePrice();
+		flightInfo.setIbe_price(ibePrice);
+		String buildFee = queryAirpolicyYeeXingRuslt.getPriceList().getPriceLis().getBuildFee();
+		flightInfo.setBuild_fee(buildFee);
+		String oilFee = queryAirpolicyYeeXingRuslt.getPriceList().getPriceLis().getOilFee();
+		flightInfo.setOil_fee(oilFee);
+		flightInfo.setPlcid(priceinfos.get(0).getPlcid());
+		flightInfo.setDisc(priceinfos.get(0).getDisc());
+		flightInfo.setExtReward(priceinfos.get(0).getExtReward());
+		String tickPrice = priceinfos.get(0).getTickPrice();
+		flightInfo.setTickPrice(tickPrice);
+		flightInfo.setProfits(priceinfos.get(0).getProfits());
+		flightInfo.setTickType(priceinfos.get(0).getTickType());
+		flightInfo.setRefund_condition(priceinfos.get(0).getRefund()
+				+ ","
+				+ priceinfos.get(0).getInvalid());
+
+		orderInfo.setYx_order_no(bookTicketYeeXingResult.getOrderInfo().getOrderid());
+		orderInfo.setCreat_data(bookTicketYeeXingResult.getOrderInfo().getCreateTime());
+
+		// 订单用户支付我方总额 = （票面价格 + 机建费 + 油税）* 乘客数量
+		float orderPriceFloat = size*(Float.parseFloat(ibePrice) + Float.parseFloat(buildFee) + Float.parseFloat(oilFee));
+		orderInfo.setOrder_price(Float.toString(orderPriceFloat));
+		// 订单我方支付易行总额 = （单张价格 + 机建费 + 油税）* 乘客数量
+		float actualPriceFloat = size*(Float.parseFloat(tickPrice) + Float.parseFloat(buildFee) + Float.parseFloat(oilFee));
+		orderInfo.setActual_price(Float.toString(actualPriceFloat));
+
+		// 入库
+		int flag = 0;
+		try {
+			flag = bo.doBookTicket(orderInfo, flightInfo, passengerInfos);
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<result><is_success>F</is_success><error>订单数据写入失败，请稍后再试！</error></result>";
+			return returnString;
+		}
+
+		if (flag > 0) {
+			BookTicketOutput bookTicketOutput = new BookTicketOutput();
+			bookTicketOutput.setIs_success("T");
+			bookTicketOutput.setOrderNum(order_no);
+			bookTicketOutput.setYxorderNum(bookTicketYeeXingResult.getOrderInfo().getOrderid());
+			bookTicketOutput.setPriceCum(Float.toString(orderPriceFloat));
+
+			returnString = bookTicketOutputXStream.toXML(bookTicketOutput);
+		} else {
+			returnString = "<result><is_success>F</is_success><error>订单数据写入失败，请稍后再试！</error></result>";
+			return returnString;
+		}
+
+		return returnString;
+	}
+
+	public String payOut(String strXml) {
+		String returnString;
+		PayOutInput payOutInput = (PayOutInput) payOutInputXStream.fromXML(strXml);
+
+		if ("1".equals(payOutInput.getPayResultFlag())) {
+			returnString = "<paySchedulingResponse><resultCode>1</resultCode><resultMessage>收到的是IPS支付失败，不处理！</resultMessage></paySchedulingResponse>";
+		}
+
+		// 数据入库
+		int flag = 0;
+		try {
+			flag  = bo.doPayOK(payOutInput.getBusinessCode(), payOutInput.getPayOperFlowNo());
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<paySchedulingResponse><resultCode>-1</resultCode><resultMessage>前段支付状态入库失败，请稍后再试！</resultMessage></paySchedulingResponse>";
+			return returnString;
+		}
+
+
+
+		// TODO:1,易行天下接口调用失败处理。2，易行天下接口执行失败处理。3，完成后数据入库失败处理。3,如我方扣款失败不调用本接口。
+
+		// 准备调用易行天下自动扣款数据
+		String dataString;
+		try {
+			dataString = bo.getdataString(payOutInput.getBusinessCode());
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<paySchedulingResponse><resultCode>-1</resultCode><resultMessage>获取支付给易行金额失败，请稍后再试！</resultMessage></paySchedulingResponse>";
+			return returnString;
+		}
+
+		String[] dataStrings = dataString.split("\\^");
+		String actualPriceString = dataStrings[0];
+		String yxOrderNum = dataStrings[1];
+
+		PayOutYeeXingInput payOutYeeXingInput = new PayOutYeeXingInput();
+		payOutYeeXingInput.setOrderid(yxOrderNum);
+		payOutYeeXingInput.setOut_notify_url(OUT_NOTIFY_URL);
+		payOutYeeXingInput.setPay_notify_url(PAY_NOTIFY_URL);
+		//payOutYeeXingInput.setPayPlatform("1");// 固定值
+		payOutYeeXingInput.setPayPlatform("2");// 固定值
+		payOutYeeXingInput.setTotalPrice(actualPriceString);
+		payOutYeeXingInput.setUserName(USERNAME);
+
+		// 生成签名
+		Encryption encryption = new Encryption();
+		String sign = encryption.getSign(payOutYeeXingInput);
+
+		//		IBEServiceStub stub;
+		//		IBEServiceStub.PayOut payOut;
+		//		IBEServiceStub.PayOutE payOutE;
+		String payOutYeeXingResultString;
+		String queryString = "";
+		try {
+			//			stub = new IBEServiceStub();
+			//			stub._getServiceClient().getOptions().setTimeOutInMilliSeconds(600000L);
+			//			stub._getServiceClient().getOptions().setProperty(Configuration.CHARACTER_SET_ENCODING, "GB2312");
+			//			payOut = (PayOut) getObject(PayOut.class);
+			//			payOut.setOrderid(yxOrderNum);
+			//			payOut.setOut_notify_url(OUT_NOTIFY_URL);
+			//			payOut.setPay_notify_url(PAY_NOTIFY_URL);
+			//			payOut.setPayPlatform("2");// 固定值
+			//			payOut.setSign(sign);
+			//			payOut.setTotalPrice(actualPriceString);
+			//			payOut.setUserName(USERNAME);
+			//
+			//			payOutE = (PayOutE) getObject(PayOutE.class);
+			//			payOutE.setPayOut(payOut);
+			//
+			//			payOutYeeXingResultString = stub.PayOut(payOutE).getPayOutResponse().get_return().toString();
+
+
+			senderBo = SendURLPostBO.getInstance();
+			queryString += "orderid=" + yxOrderNum;
+			queryString += "&totalPrice=" + actualPriceString;
+			queryString += "&payPlatform=2";//固定值。1支付宝
+			queryString += "&outNotifyUrl=" + OUT_NOTIFY_URL;
+			queryString += "&payNotifyUrl=" + PAY_NOTIFY_URL;
+			queryString += "&sign=" + sign;
+			queryString += "&userName=" + USERNAME;
+
+			payOutYeeXingResultString = senderBo.connectionUrl("CXF4YeeXing", "/YeeXingPayOutServl", queryString);
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<paySchedulingResponse><resultCode>-1</resultCode><resultMessage>自动扣款调用失败，请稍后再试！</resultMessage></paySchedulingResponse>";
+			return returnString;
+		}
+
+		PayOutYeeXingResult payOutYeeXingResult = (PayOutYeeXingResult) payOutYeeXingResultXStream.fromXML(payOutYeeXingResultString);
+		if (!"T".equals(payOutYeeXingResult.getIs_success())) {
+			returnString = "<paySchedulingResponse><resultCode>-1</resultCode><resultMessage>易行扣款失败，" + payOutYeeXingResult.getError() + "请稍后再试！</resultMessage></paySchedulingResponse>";
+			return returnString;
+		}
+
+		// 数据入库
+		flag = 0;
+		try {
+//			flag  = bo.doPayOut(payOutYeeXingResult, payOutInput.getPayOperFlowNo(), "1");
+			flag  = bo.doPayOut(payOutYeeXingResult, payOutInput.getPayOperFlowNo(), "2");
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<paySchedulingResponse><resultCode>-1</resultCode><resultMessage>获取支付给易行金额失败，请稍后再试！</resultMessage></paySchedulingResponse>";
+			return returnString;
+		}
+
+		if (flag > 0) {
+			returnString = "<paySchedulingResponse><resultCode>0</resultCode><resultMessage>操作成功</resultMessage></paySchedulingResponse>";
+		} else {
+
+			returnString = "<paySchedulingResponse><resultCode>-1</resultCode><resultMessage>自动扣款数据入库错误！</resultMessage></paySchedulingResponse>";
+			return returnString;
+		}
+
+		return returnString;
+	}
+
+	public String payNotify(String strXml) {
+		System.out.println(strXml);
+		String returnString;
+		// TODO:需要网站端接受通知并转发，本接口相应后返回给易行天下。此处的总支付金额覆盖原计算值。
+		PayNotifyInput payNotifyInput = (PayNotifyInput) payNotifyInputXStream.fromXML(strXml);
+
+
+		//		// 生成签名
+		//		Encryption encryption = new Encryption();
+		//		String sign = encryption.getSign(payNotifyInput);
+		//
+		//		if (!sign.equals(payNotifyInput.getSign())) {
+		//			returnString = "<result><is_success>F</is_success><error>签名错误！</error></result>";
+		//			return returnString;
+		//		}
+
+		// 入库
+		int flag = 0;
+		try {
+			flag  = bo.doPayNotify(payNotifyInput);
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+			return returnString;
+		}
+
+		if (flag > 0) {
+			returnString = "<result><is_success>T</is_success></result>";
+		} else {
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+			return returnString;
+		}
+
+		return returnString;
+	}
+
+	public String outNotify(String strXml) {
+		System.out.println(strXml);
+		String returnString;
+		// TODO:需要网站端接受通知并转发，本接口相应后返回给易行天下。
+
+		OutNotifyInput outNotifyInput = (OutNotifyInput) outNotifyInputXStream.fromXML(strXml);
+
+		//		// 生成签名
+		//		Encryption encryption = new Encryption();
+		//		String sign = encryption.getSign(outNotifyInput);
+		//
+		//		if (!sign.equals(outNotifyInput.getSign())) {
+		//			returnString = "<result><is_success>F</is_success><error>签名错误！</error></result>";
+		//			return returnString;
+		//		}
+
+		// 入库
+		int flag = 0;
+		try {
+			flag  = bo.doOutNotify(outNotifyInput);
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+			return returnString;
+		}
+
+		if (flag > 0) {
+			returnString = "<result><is_success>T</is_success></result>";
+		} else {
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+			return returnString;
+		}
+
+		return returnString;
+	}
+
+	public String queryAirpolicy(String strXml) {
+		QueryAirpolicyInput queryAirpolicyInput = (QueryAirpolicyInput)queryAirpolicyYeeXingInputXStream.fromXML(strXml);
+		queryAirpolicyInput.setUserName(USERNAME);
+
+		String queryAirpolicyRuslt = queryAirpolicy(queryAirpolicyInput, 0);
+
+		QueryAirpolicyYeeXingRuslt queryAirpolicyYeeXingRuslt
+		= (QueryAirpolicyYeeXingRuslt)queryAirpolicyYeeXingRusltXStream.fromXML(queryAirpolicyRuslt);
+		queryAirpolicyRuslt = queryAirpolicyYeeXingRusltXStreamB.toXML(queryAirpolicyYeeXingRuslt).toString();
+		System.out.println("BBBBBBBB:" + queryAirpolicyRuslt);
+		return queryAirpolicyRuslt;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.neusoft.services.travelSky.yeeXing.service.YeeXingService#refundTicket(java.lang.String)
+	 */
+	public String refundTicket(String strXml) {
+		// TODO：易行天下支持多订单退票。本接口不支持多订单退票，支持多乘客。目前订单必须全退.拼串是否需要URLENCODE
+		String returnString;
+		RefundTicketInput refundTicketInput = (RefundTicketInput) refundTicketInputXStream.fromXML(strXml);
+		String refundSegment = refundTicketInput.getRefundSegment();
+		refundSegment = refundSegment == null ? "" : refundSegment;
+		refundTicketInput.setRefundSegment(refundSegment);
+		refundTicketInput.setUserName(USERNAME);
+		refundTicketInput.setRefundnotifyurl(REFUND_NOTIFY_URL);
+		// 易行方面使用的退票类型，暂定为2、自愿废票
+		// 退票类型判断，如果是买票当天退票改为1、当日废票，否则使用2、自愿废票
+		// 航班起飞当日退票、MU,FM,KN,JD四家航空退票用户提交退票申请后，需电话客服说明
+		// 航班取消或延误退票直接联系客服，如客户在页面操作产生退票费用，自负
+		refundTicketInput.setRefundType("1");
+
+		// 生成签名
+		Encryption encryption = new Encryption();
+		String sign = encryption.getSign(refundTicketInput);
+
+		//		IBEServiceStub stub;
+		//		IBEServiceStub.RefundTicket refundTicket;
+		//		IBEServiceStub.RefundTicketE refundTicketE;
+		String refundTicketYeeXingResultString;
+		String queryString = "";
+		try {
+			//			stub = new IBEServiceStub();
+			//			stub._getServiceClient().getOptions().setTimeOutInMilliSeconds(600000L);
+			//			stub._getServiceClient().getOptions().setProperty(Configuration.CHARACTER_SET_ENCODING, "GB2312");
+			//			refundTicket = (RefundTicket) getObject(RefundTicket.class);
+			//			refundTicket.setAirId(refundTicketInput.getAirId());
+			//			refundTicket.setOrderid(refundTicketInput.getOrderid());
+			//			refundTicket.setPassengerName(refundTicketInput.getPassengerName());
+			//			refundTicket.setRefund_notify_url(REFUND_NOTIFY_URL);
+			//			refundTicket.setRefundMemo(refundTicketInput.getRefundMemo());
+			//			refundTicket.setRefundSegment(refundTicketInput.getRefundSegment());
+			//			refundTicket.setRefundType(refundTicketInput.getRefundType());
+			//			refundTicket.setSign(sign);
+			//			refundTicket.setUserName(USERNAME);
+			//
+			//			refundTicketE = (RefundTicketE) getObject(RefundTicketE.class);
+			//			refundTicketE.setRefundTicket(refundTicket);
+			//
+			//			refundTicketYeeXingResultString = stub.RefundTicket(refundTicketE).getRefundTicketResponse().get_return().toString();
+
+			senderBo = SendURLPostBO.getInstance();
+
+			queryString += "passengerName=" + refundTicketInput.getPassengerName();
+			queryString += "&airId=" + refundTicketInput.getAirId();
+			queryString += "&refundType=" + refundTicketInput.getRefundType();
+			queryString += "&refundMemo=" + refundTicketInput.getRefundMemo();
+			queryString += "&refundSegment=" + refundTicketInput.getRefundSegment();
+			queryString += "&refundNotifyUrl=" + REFUND_NOTIFY_URL;
+			queryString += "&orderid=" + refundTicketInput.getOrderid();
+			queryString += "&sign=" + sign;
+			queryString += "&userName=" + USERNAME;
+
+			refundTicketYeeXingResultString = senderBo.connectionUrl("CXF4YeeXing", "/YeeXingRefundTicketServl", queryString);
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<result><is_success>F</is_success><error>申请退废票失败，请稍后再试！</error></result>";
+			return returnString;
+		}
+
+		RefundTicketYeeXingResult refundTicketYeeXingResult
+		= (RefundTicketYeeXingResult) refundTicketYeeXingResultXStream.fromXML(refundTicketYeeXingResultString);
+
+		if (!"T".equals(refundTicketYeeXingResult.getIs_success())) {
+			return refundTicketYeeXingResultString;
+		}
+
+		// 入库
+		int flag = 0;
+		try {
+			flag  = bo.doRefundTicket(refundTicketInput);
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+			return returnString;
+		}
+
+		if (flag > 0) {
+			return  refundTicketYeeXingResultString;
+		} else {
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+
+			return returnString;
+		}
+	}
+
+	/* (non-Javadoc)
+	 * @see com.neusoft.services.travelSky.yeeXing.service.YeeXingService#refundNotify(java.lang.String)
+	 */
+	public String refundNotify(String strXml) {
+		System.out.println("refundNotify: +++++++++++++++++++++++++++ " + strXml);
+		String returnString;
+		// TODO:需要网站端接受通知并转发，本接口相应后返回给易行天下。易行退废票通知是以一张订单退票发一次通知？
+		refunNotifyInputXStream.alias("input", RefunNotifyInput.class);
+		RefunNotifyInput refunNotifyInput = (RefunNotifyInput)refunNotifyInputXStream.fromXML(strXml);
+
+		//		// 生成签名
+		//		Encryption encryption = new Encryption();
+		//		String sign = encryption.getSign(refunNotifyInput);
+		//
+		//		if (!sign.equals(refunNotifyInput.getSign())) {
+		//			returnString = "<result><is_success>F</is_success><error>签名错误！</error></result>";
+		//			return returnString;
+		//		}
+
+		// 入库
+		int flag = 0;
+		try {
+			flag  = bo.doRefundNotify(refunNotifyInput);
+		} catch (Exception e) {
+			e.printStackTrace();
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+			return returnString;
+		}
+/*
+		if (flag > 0) {
+			// TODO:后续要根据是否退票调用本地的退费接口，并建立接受通知的接口
+			String dataString;
+			try {
+				dataString = bo.getRefundNeedString(refunNotifyInput.getOrderid(), refunNotifyInput.getAirId());
+			} catch (Exception e) {
+				e.printStackTrace();
+				returnString = "<paySchedulingResponse><resultCode>-1</resultCode><resultMessage>获取支付给易行金额失败，请稍后再试！</resultMessage></paySchedulingResponse>";
+				return returnString;
+			}
+
+			String[] dataStrings = dataString.split("\\^");
+			String fee = dataStrings[0];
+			String passenger_no = dataStrings[1];
+			String order_no = dataStrings[2];
+
+			StringBuffer queryStringBuffer = new StringBuffer();
+			queryStringBuffer.append("externSystemId=54");
+			queryStringBuffer.append("&payApplyNo=").append(passenger_no);
+			queryStringBuffer.append("&prePayApplyNo=").append(order_no);
+			queryStringBuffer.append("&payType=1");
+			queryStringBuffer.append("&operType=5");
+			queryStringBuffer.append("&amount=").append(Float.parseFloat(fee)*100);
+			queryStringBuffer.append("&thirdSystemId=");
+			queryStringBuffer.append("&bankId=");
+			queryStringBuffer.append("&ext=");
+
+			SendURLPostBO sender = SendURLPostBO.getInstance();
+			String reString = null;
+			try {
+				reString = sender.connectionUrl(REFUND_URL, queryStringBuffer.toString());
+			} catch (Exception e) {
+				e.printStackTrace();
+				return returnString = "<result><is_success>F</is_success><error>退费给用户失败！</error></result>";
+			}
+
+			PayDrawbackResponse payDrawbackResponse = (PayDrawbackResponse)payDrawbackResponseXStream.fromXML(reString);
+			payDrawbackResponse.setAmount(Float.toString(Float.parseFloat(payDrawbackResponse.getAmount())/100));
+			// 入库
+			try {
+				flag  = bo.doRefundTicketFee(payDrawbackResponse, refunNotifyInput.getProcedures());
+			} catch (Exception e) {
+				e.printStackTrace();
+				returnString = "<result><is_success>F</is_success><error>退费给用户数据入库失败！</error></result>";
+				return returnString;
+			}
+
+			if (flag > 0) {
+				returnString = "<result><is_success>T</is_success></result>";
+			} else {
+				returnString = "<result><is_success>F</is_success><error>退费给用户数据入库失败！</error></result>";
+
+				return returnString;
+			}
+			// TODO：退款失败流程？
+
+		} else {
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+			return returnString;
+		}
+*/
+		if (flag > 0) {
+			returnString = "<result><is_success>T</is_success></result>";
+		} else {
+			returnString = "<result><is_success>F</is_success><error>数据入库失败！</error></result>";
+			return returnString;
+		}
+		return returnString;
+	}
+
+	private String queryAirpolicy(QueryAirpolicyInput queryAirpolicyInput, int Flag) {
+		Flag = Flag + 1;
+		if (Flag < 4) {
+			// 生成签名
+			Encryption encryption = new Encryption();
+			String sign = encryption.getSign(queryAirpolicyInput);
+
+			//			IBEServiceStub stub;
+			//			IBEServiceStub.QueryAirpolicy queryAirpolicy;
+			//			IBEServiceStub.QueryAirpolicyE queryAirpolicyE;
+			String queryAirpolicyRuslt;
+			QueryAirpolicyYeeXingRuslt queryAirpolicyYeeXingRuslt;
+			List<Priceinfo> priceinfos = new ArrayList<Priceinfo>();
+			List<Priceinfo> newPriceinfos = new ArrayList<Priceinfo>();
+			int priceinfosSize = 0;
+			SendURLPostBO sender = SendURLPostBO.getInstance();
+			String queryString = "";
+			try {
+				//				stub = new IBEServiceStub();
+				//				stub._getServiceClient().getOptions().setTimeOutInMilliSeconds(600000L);
+				//				stub._getServiceClient().getOptions().setProperty(Configuration.CHARACTER_SET_ENCODING, "GB2312");
+				//				queryAirpolicy = (QueryAirpolicy) getObject(QueryAirpolicy.class);
+				//				queryAirpolicy.setAirpGet(queryAirpolicyInput.getAirpGet());
+				//				queryAirpolicy.setAirpSource(queryAirpolicyInput.getAirpSource());
+				//				queryAirpolicy.setEncryptString(queryAirpolicyInput.getEncryptString());
+				//				queryAirpolicy.setTickType(queryAirpolicyInput.getTickType());
+				//				queryAirpolicy.setUserName(queryAirpolicyInput.getUserName());
+				//				queryAirpolicy.setSign(sign);
+				//
+				//				queryAirpolicyE = (QueryAirpolicyE) getObject(QueryAirpolicyE.class);
+				//				queryAirpolicyE.setQueryAirpolicy(queryAirpolicy);
+				//
+				//				queryAirpolicyRuslt = stub.QueryAirpolicy(queryAirpolicyE).getQueryAirpolicyResponse().get_return().toString();
+				//			queryAirpolicyRuslt = "<result><priceList><priceLis isOneCabinManyPrice=\"0\" isHighestPrice=\"0\" buildFee=\"50.0\" oilFee=\"100.0\" ><priceinfos><priceinfo workReturnTime=\"00:00-24:00\" restReturnTime=\"00:00-22:45\" restWorkTime=\"00:00-23:00\" refund=\"自愿退票保证5个工作日内退款\" invalid=\"当日作废保证24点前退款\" credit=\"\" indemnity=\"\" payType=\"\" commPayPrice=\"14.0\" encryptString=\"dd4d0c22e9616521b29f1b666281559d603ffec9551a98fd50e841515fb3f400d36e05a2c2791f9f16076170455b25a2656c7be628402b6e1bf19c442df9594eab05784c96b5c64729d3fa071d9e3b30ea9ee7f42ead1604077d7f9564f51c04c107c91ba194f820f3d006e4a6279730615d37af371223ca50e841515fb3f400c7ac7a8a0c76ebe1\" ibePrice=\"3160.00\" tickType=\"1\" changePnr=\"0\" ibePricec=\"3160.00\" plcid=\"2053328\" isSphigh=\"0\" disc=\"14.00\" extReward=\"0.00\" tickPrice=\"2718.00\" profits=\"442.00\" workTime=\"00:00-24:00\" outTime=\"--秒\" memo=\"此客票类型为B2B。\" ></priceinfo></priceinfos></priceLis></priceList><is_success>T</is_success></result>";
+				//				System.out.println("AAAAAAA:" + queryAirpolicyRuslt);
+				queryString += "airpGet=" + queryAirpolicyInput.getAirpGet();
+				queryString += "&airpSource=" + queryAirpolicyInput.getAirpSource();
+				queryString += "&encryptString=" + queryAirpolicyInput.getEncryptString();
+				queryString += "&tickType=" + queryAirpolicyInput.getTickType();
+				queryString += "&userName=" + USERNAME;
+				queryString += "&sign=" + sign;
+
+				queryAirpolicyRuslt = sender.connectionUrl("CXF4YeeXing", "/YeeXingQueryAirpolicyServl", queryString);
+				queryAirpolicyYeeXingRuslt = (QueryAirpolicyYeeXingRuslt)queryAirpolicyYeeXingRusltXStream.fromXML(queryAirpolicyRuslt);
+				if (!"T".equals(queryAirpolicyYeeXingRuslt.getIs_success())) {
+					return "<result><is_success>F</is_success></result>";
+				}
+				priceinfos = queryAirpolicyYeeXingRuslt.getPriceList().getPriceLis().getPriceinfos();
+				priceinfosSize = priceinfos.size();
+				String maxDisc = null;
+				String maxDiscTmp = null;;
+				for (int i = 0; i < priceinfosSize; i++) {
+					if ("0".equals(priceinfos.get(i).getIsSphigh())) {
+						if (maxDisc == null || "".equals(maxDisc)) {
+							maxDisc = Integer.toString(i);
+						} else {
+							maxDiscTmp = Integer.toString(i);
+							if (Float.parseFloat(priceinfos.get(i).getDisc())
+									> Float.parseFloat(priceinfos.get(Integer.parseInt(maxDisc)).getDisc())) {
+								maxDisc = maxDiscTmp;
+							}
+						}
+					} else {
+						priceinfos.remove(i);
+					}
+				}
+
+				Priceinfo priceinfo = (Priceinfo)priceinfos.get(Integer.parseInt(maxDisc));
+				newPriceinfos.add(priceinfo);
+				queryAirpolicyYeeXingRuslt.getPriceList().getPriceLis().setPriceinfos(newPriceinfos);
+
+				queryAirpolicyRuslt = queryAirpolicyYeeXingRusltXStream.toXML(queryAirpolicyYeeXingRuslt).toString();
+				if (!"T".equals(queryAirpolicyYeeXingRuslt.getIs_success())) {
+					queryAirpolicy(queryAirpolicyInput, Flag++);
+				} else {
+					return queryAirpolicyRuslt;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				queryAirpolicy(queryAirpolicyInput, Flag);
+			}
+		}
+
+		return "<result><is_success>F</is_success></result>";
+	}
+
+	private String getPassengerNum() {
+		SimpleDateFormat tempDate = new SimpleDateFormat("yyyyMMddHHmmss");
+		String datetime = tempDate.format(new java.util.Date());
+		return datetime + generateNumberString(6);
+	}
+
+	private String getOrderNum() {
+		SimpleDateFormat tempDate = new SimpleDateFormat("yyyyMMddHHmmss");
+		String datetime = tempDate.format(new java.util.Date());
+		return datetime + generateMixString(6);
+	}
+
+	private String generateNumberString(int length) {
+		String numberChar = "0123456789";
+		StringBuffer sb = new StringBuffer();
+
+		Random random = new Random();
+
+		for (int i = 0; i < length; i++) {
+			sb.append(numberChar.charAt(random.nextInt(numberChar.length())));
+		}
+
+		return sb.toString();
+
+	}
+	private String generateMixString(int length) {
+		String allChar = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		String letterChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+		StringBuffer sb = new StringBuffer();
+
+		Random random = new Random();
+
+		for (int i = 0; i < length; i++) {
+			sb.append(allChar.charAt(random.nextInt(letterChar.length())));
+		}
+
+		return sb.toString();
+
+	}
+
+	private static ADBBean getObject(Class<?> type) throws Exception {
+		return (ADBBean) type.newInstance();
+	}
+
+	public static void main(String[] args) throws Exception {
+		YeeXingServiceImpl serviceImpl = new YeeXingServiceImpl();
+
+		String strXmlString = "<input>"
+				+"<userName></userName>"
+				+"<encryptString>dd4d0c22e9616521f2ef21131c80154828a80edfd27c71534c92e4c70941611f7181e9cbf3c176247935d39c1e7b7c6b4be682321da61eb0310aaa86b3941a02aeeb8e49129aa3042077feac7d10da04ad6a88b4fa37833d</encryptString>"
+				+"<passengerInfos>"
+				+"<passengerInfo>"
+				+"<passenger_name>成人票</passenger_name>"
+				+"<passenger_type>1</passenger_type>"
+				+"<orddet_type>1</orddet_type>"
+				+"<orddetid_num>231083198601156918</orddetid_num>"
+				+"</passengerInfo>"
+				+"<passengerInfo>"
+				+"<passenger_name>成人</passenger_name>"
+				+"<passenger_type>1</passenger_type>"
+				+"<orddet_type>1</orddet_type>"
+				+"<orddetid_num>231083198601156918</orddetid_num>"
+				+"</passengerInfo>"
+				+"</passengerInfos>"
+				+"<orderInfo>"
+				+"<creat_data></creat_data>"
+				+"<airSeg>1</airSeg>"
+				+"<contacts_name>联系人</contacts_name>"
+				+"<contacts_tele>04111111111111</contacts_tele>"
+				+"<contacts_phone>13100000000</contacts_phone>"
+				+"<contacts_fax>04112222222222</contacts_fax>"
+				+"<contacts_email>sdf@sdf.com</contacts_email>"
+				+"<pay_type>HX</pay_type>"
+				+"<order_price></order_price>"
+				+"<contacts_address>联系地址</contacts_address>"
+				+"<member_no>pm12051821500889</member_no>"
+				+"<order_status></order_status>"
+				+"<actual_price></actual_price>"
+				+"<pay_order_no></pay_order_no>"
+				+"</orderInfo>"
+				+"<flightInfo>"
+				+"<org_city>PEK</org_city>"
+				+"<org_city_name>北京</org_city_name>"
+				+"<depart_term>首都国际机场T2</depart_term>"
+				+"<dst_city>SHA</dst_city>"
+				+"<dst_city_name>上海</dst_city_name>"
+				+"<arrival_term>虹桥机场T2</arrival_term>"
+				+"<air_comp>MU</air_comp>"
+				+"<air_comp_name>东方航空</air_comp_name>"
+				+"<flight>MU</flight>"
+				+"<cabin_code>经济舱</cabin_code>"
+				+"<cabin_type>0</cabin_type>"
+				+"<cabin_discount></cabin_discount>"
+				+"<cabin_name>经济舱</cabin_name>"
+				+"<plane_type>333</plane_type>"
+				+"<start_time>2013-05-2016:00</start_time>"
+				+"<end_Time>2013-05-2018:10</end_Time>"
+				+"<ibe_price></ibe_price>"
+				+"<change_condition>不允许更改</change_condition>"
+				+"<refund_condition>不允许退票</refund_condition>"
+				+"<tosign_condition>不允许签转</tosign_condition>"
+				+"</flightInfo>"
+				+"</input>";
+		System.out.println(serviceImpl.bookTicket(strXmlString));
+	}
+}
