@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoUpdater>
+  <description>Application autoUpdate</description>
+  <Updater>
+	<Url>https://github.com/ldwonday/userlist/blob/master/update/</Url>
+	<LastUpdateTime>2014-1-22</LastUpdateTime>
+  </Updater>
+  <Application applicationId="ItemSoft">
+    <EntryPoint>QQ情侣宠物辅助.exe</EntryPoint>
+    <Location>.</Location>
+	<Version>1.0.2.1</Version>
+  </Application>
+  <Files>
+	   <File Ver="1.0.1.0" Name="QQ情侣宠物辅助.exe" />
+  </Files>
+</AutoUpdater>
